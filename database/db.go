@@ -13,6 +13,13 @@ import (
 
 var DB *gorm.DB
 
+func Migrate() {
+	err := DB.AutoMigrate(&models.User{}, &models.Project{}, &models.Task{}, &models.Label{})
+	if err != nil {
+		log.Fatal("Failed to migrate database", err)
+	}
+}
+
 func InitDB() {
 	err := godotenv.Load()
 	if err != nil {
@@ -29,11 +36,9 @@ func InitDB() {
 
 	connStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s", DB_HOST, DB_PORT, DB_USER, DB_NAME, DB_PASSWORD, DB_SSLMODE)
 
-	DB, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
+	DB, err = gorm.Open(postgres.Open(connStr), &gorm.Config{})
 
 	if err != nil {
 		log.Fatal("Failed to connect to database", err)
 	}
-
-	DB.AutoMigrate(&models.User{}, &models.Project{}, &models.Task{})
 }

@@ -9,36 +9,45 @@ import (
 	"github.com/labstack/gommon/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
 
-func Migrate() {
-	err := DB.AutoMigrate(&models.User{}, &models.Project{}, &models.Task{}, &models.Label{})
+func ConnectDB() *gorm.DB {
+	dsn := getDSN()
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+
 	if err != nil {
-		log.Fatal("Failed to migrate database", err)
+		log.Fatalf("Failed to connect to database %v", err)
 	}
+
+	err = db.AutoMigrate(&models.User{}, &models.Project{}, &models.Task{})
+	if err != nil {
+		log.Fatalf("Failed to migrate database %v", err)
+	}
+
+	DB = db
+
+	return DB
 }
 
-func InitDB() {
+func getDSN() string {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Error("Error loading .env file")
 	}
 
-	// Get DB credentials from .env file
-	DB_HOST := os.Getenv("DB_HOST")
-	DB_PORT := os.Getenv("DB_PORT")
-	DB_USER := os.Getenv("DB_USER")
-	DB_PASSWORD := os.Getenv("DB_PASSWORD")
-	DB_NAME := os.Getenv("DB_NAME")
-	DB_SSLMODE := os.Getenv("DB_SSLMODE")
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
 
-	connStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s", DB_HOST, DB_PORT, DB_USER, DB_NAME, DB_PASSWORD, DB_SSLMODE)
-
-	DB, err = gorm.Open(postgres.Open(connStr), &gorm.Config{})
-
-	if err != nil {
-		log.Fatal("Failed to connect to database", err)
-	}
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	return dsn
 }

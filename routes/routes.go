@@ -7,4 +7,5 @@ import (
 
 func SetupRoutes(e *echo.Echo, h *service.UserHandler) {
 	e.POST("/user/register", h.Register)
+	e.POST("/user/login", h.Login)
 }

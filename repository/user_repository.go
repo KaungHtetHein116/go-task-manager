@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+
 	"github.com/KaungHtetHein116/personal-task-manager/models"
 	"gorm.io/gorm"
 )
@@ -19,14 +21,27 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 func (r *userRepo) CreateUser(user *models.User) error {
-	return r.db.Create(user).Error
+	err := r.db.Create(user).Error
+	if err != nil {
+		// Check for unique constraint violation
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return errors.New("user with this email already exists")
+		}
+		// Check for invalid data
+		if errors.Is(err, gorm.ErrInvalidData) {
+			return errors.New("invalid user data provided")
+		}
+		// Return a generic database error for other cases
+		return errors.New("failed to create user: " + err.Error())
+	}
+	return nil
 }
 
 func (r *userRepo) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
-	err := r.db.Where("email = ?", email).First(&user).Error
-	if err != nil {
+	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/KaungHtetHein116/personal-task-manager/models"
 	"github.com/KaungHtetHein116/personal-task-manager/repository"
@@ -46,7 +47,7 @@ func (r *ProjectHandler) CreateProject(c echo.Context) error {
 		})
 	}
 
-	project := &models.Project{Name: input.Name, UserID: userID}
+	project := &models.Project{Name: input.Name, UserID: userID, Description: &input.Description}
 	if err := r.projectRepo.CreateProject(project); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": "failed to create in db",
@@ -56,7 +57,92 @@ func (r *ProjectHandler) CreateProject(c echo.Context) error {
 	return c.JSON(http.StatusCreated, echo.Map{
 		"message": "Project created",
 		"data": echo.Map{
-			"name": input.Name,
+			"name":        input.Name,
+			"description": input.Description,
+		},
+	})
+}
+
+func (r *ProjectHandler) GetProject(c echo.Context) error {
+	var response []models.ProjectsResponse
+
+	userID := c.Get("user_id").(uint)
+
+	projects, err := r.projectRepo.GetUserProjects(userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": "db get error",
+		})
+	}
+
+	for _, project := range projects {
+		response = append(response, models.ProjectsResponse{
+			ID:          project.ID,
+			Name:        project.Name,
+			Tasks:       project.Tasks,
+			Description: project.Description,
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "successful",
+		"data":    response,
+	})
+}
+
+func (r *ProjectHandler) UpdateProject(c echo.Context) error {
+	idParam := c.Param("id")
+	projectID, _ := strconv.Atoi(idParam)
+
+	var input models.CreateProjectInput
+	userID := c.Get("user_id").(uint)
+
+	// check json valid
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "invalid input",
+		})
+	}
+
+	// check if project exsit
+	exist := r.projectRepo.IsProjectExistByID(uint(projectID), userID)
+	if !exist {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "project not found",
+		})
+	}
+
+	var project models.Project
+	// check field validation
+	if err := utils.Validation.Struct(input); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			formattedErrors := utils.FormatValidationErrors(validationErrors)
+			return c.JSON(http.StatusBadRequest, echo.Map{
+				"message": "validation error",
+				"errors":  formattedErrors,
+			})
+		}
+	}
+
+	// Update project fields
+	project.Name = input.Name
+	project.Description = &input.Description
+	project.UserID = userID
+	project.ID = uint(projectID)
+
+	// Save the updated project
+	if err := r.projectRepo.UpdateProject(&project); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": "failed to update project",
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "project updated successfully",
+		"data": echo.Map{
+			"id":          project.ID,
+			"name":        project.Name,
+			"description": project.Description,
 		},
 	})
 }

@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/KaungHtetHein116/personal-task-manager/models"
 	"github.com/joho/godotenv"
@@ -21,6 +22,11 @@ func ConnectDB() *gorm.DB {
 		Logger:         logger.Default.LogMode(logger.Info),
 		TranslateError: true,
 	})
+
+	sqlDB, _ := db.DB()
+	sqlDB.SetMaxOpenConns(25)                 // Max open connections
+	sqlDB.SetMaxIdleConns(25)                 // Max idle connections
+	sqlDB.SetConnMaxLifetime(5 * time.Minute) // Connection lifetime
 
 	if err != nil {
 		log.Fatalf("Failed to connect to database %v", err)

@@ -93,7 +93,7 @@ func (h *UserHandler) Login(c echo.Context) error {
 	}
 
 	// Generate JWT token
-	token, err := utils.GenerateJWTToken(user.ID, user.Username, user.Email)
+	token, err := utils.GenerateJWTToken(user.ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": "token generation error",
@@ -106,5 +106,21 @@ func (h *UserHandler) Login(c echo.Context) error {
 			"name":  user.Username,
 			"token": token,
 		},
+	})
+}
+
+func (h *UserHandler) GetProfile(c echo.Context) error {
+	userID := c.Get("user_id").(int)
+	user, err := h.userRepo.GetUserByID(userID)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, echo.Map{
+			"message": "User not found",
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "successful",
+		"data":    user,
 	})
 }

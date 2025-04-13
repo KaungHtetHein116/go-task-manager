@@ -16,17 +16,14 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateJWTToken(userID uint, username, email string) (string, error) {
-	claims := JWTClaims{
-		UserID:   userID,
-		Username: username,
-		Email:    email,
-		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-		},
+func GenerateJWTToken(userID uint) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id": userID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"iat":     time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }

@@ -29,12 +29,14 @@ func main() {
 	}))
 	// 4. Repositories must be created before handlers
 	authRepo := repository.NewUserRepository(db)
+	projectRepo := repository.NewProjectRepository(db)
 
 	// 5. Handlers must be created before setting up routes
 	authHandler := service.NewAuthService(authRepo)
+	projectHandler := service.NewProjectService(projectRepo)
 
 	// 6. Routes must be set up before starting the server
-	routes.SetupRoutes(e, authHandler)
+	routes.SetupRoutes(e, authHandler, projectHandler)
 
 	// 7. Port must be configured before starting the server
 	port := os.Getenv("APP_PORT")

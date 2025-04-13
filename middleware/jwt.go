@@ -32,7 +32,7 @@ func JWTMiddleware(secret string) echo.MiddlewareFunc {
 
 			// Add user id to context
 			claims := token.Claims.(jwt.MapClaims)
-			c.Set("user_id", int(claims["user_id"].(float64)))
+			c.Set("user_id", uint(claims["user_id"].(float64)))
 
 			return next(c)
 		}

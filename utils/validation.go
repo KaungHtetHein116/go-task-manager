@@ -10,6 +10,8 @@ type ValidationErrorResponse struct {
 	Message string `json:"message"`
 }
 
+var Validation = validator.New()
+
 func FormatValidationErrors(ve validator.ValidationErrors) []ValidationErrorResponse {
 	var errors []ValidationErrorResponse
 

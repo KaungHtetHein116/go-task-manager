@@ -9,3 +9,7 @@ type Project struct {
 	User   User `gorm:"foreignkey:UserID"`
 	Tasks  []Task
 }
+
+type CreateProjectInput struct {
+	Name string `validate:"required,min=3"`
+}

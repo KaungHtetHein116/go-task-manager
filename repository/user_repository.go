@@ -10,7 +10,7 @@ import (
 type UserRepository interface {
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
-	GetUserByID(id int) (*models.User, error)
+	GetUserByID(id uint) (*models.User, error)
 }
 
 type userRepo struct {
@@ -47,7 +47,7 @@ func (r *userRepo) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *userRepo) GetUserByID(id int) (*models.User, error) {
+func (r *userRepo) GetUserByID(id uint) (*models.User, error) {
 	var user models.User
 	if err := r.db.First(&user, id).Error; err != nil {
 		return nil, err

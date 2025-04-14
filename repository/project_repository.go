@@ -11,6 +11,7 @@ type ProjectRepository interface {
 	IsProjectExist(name string, userID uint) bool
 	IsProjectExistByID(id uint, userID uint) bool
 	UpdateProject(project *models.Project) error
+	DeleteProject(id uint, userID uint) error
 }
 
 type projectRepo struct {
@@ -47,4 +48,8 @@ func (r *projectRepo) IsProjectExistByID(id uint, userID uint) bool {
 
 func (r *projectRepo) UpdateProject(project *models.Project) error {
 	return r.db.Save(project).Error
+}
+
+func (r *projectRepo) DeleteProject(id uint, userID uint) error {
+	return r.db.Where("user_id = ? AND ID = ?", userID, id).Delete(&models.Project{}).Error
 }

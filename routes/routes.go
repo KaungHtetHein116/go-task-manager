@@ -20,4 +20,5 @@ func SetupRoutes(e *echo.Echo, userHandler *service.UserHandler, projectHandler 
 	protected.POST("/projects", projectHandler.CreateProject)
 	protected.GET("/projects", projectHandler.GetProject)
 	protected.PATCH("/projects/:id", projectHandler.UpdateProject)
+	protected.DELETE("/projects/:id", projectHandler.DeleteProject)
 }

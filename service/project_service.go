@@ -57,6 +57,7 @@ func (r *ProjectHandler) CreateProject(c echo.Context) error {
 	return c.JSON(http.StatusCreated, echo.Map{
 		"message": "Project created",
 		"data": echo.Map{
+			"ID":          project.ID,
 			"name":        input.Name,
 			"description": input.Description,
 		},
@@ -144,5 +145,29 @@ func (r *ProjectHandler) UpdateProject(c echo.Context) error {
 			"name":        project.Name,
 			"description": project.Description,
 		},
+	})
+}
+
+func (r *ProjectHandler) DeleteProject(c echo.Context) error {
+	idParam := c.Param("id")
+	projectID, _ := strconv.Atoi(idParam)
+	userID := c.Get("user_id").(uint)
+
+	// check if project exsit
+	exist := r.projectRepo.IsProjectExistByID(uint(projectID), userID)
+	if !exist {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "project not found",
+		})
+	}
+
+	if err := r.projectRepo.DeleteProject(uint(projectID), userID); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": "database delete error",
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "project deleted",
 	})
 }

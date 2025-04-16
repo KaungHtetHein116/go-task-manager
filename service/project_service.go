@@ -1,9 +1,11 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
+	redisdb "github.com/KaungHtetHein116/personal-task-manager/internal/redis"
 	"github.com/KaungHtetHein116/personal-task-manager/models"
 	"github.com/KaungHtetHein116/personal-task-manager/repository"
 	"github.com/KaungHtetHein116/personal-task-manager/utils"
@@ -64,7 +66,7 @@ func (r *ProjectHandler) CreateProject(c echo.Context) error {
 	})
 }
 
-func (r *ProjectHandler) GetProject(c echo.Context) error {
+func (r *ProjectHandler) GetProjects(c echo.Context) error {
 	var response []models.ProjectsResponse
 
 	userID := c.Get("user_id").(uint)
@@ -169,5 +171,41 @@ func (r *ProjectHandler) DeleteProject(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"message": "project deleted",
+	})
+}
+
+func (r *ProjectHandler) GetProjectByID(c echo.Context) error {
+	idParam := c.Param("id")
+	projectID, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"message": "invalid ID"})
+	}
+
+	userID := c.Get("user_id").(uint)
+	cacheKey := fmt.Sprintf("project:%d", projectID)
+
+	// ✅ Step 1: Try to get from cache
+	var cachedProject models.Project
+	found, _ := redisdb.Get(cacheKey, &cachedProject)
+
+	if found {
+		return c.JSON(http.StatusOK, echo.Map{
+			"message": "successful (from cache)",
+			"data":    cachedProject,
+		})
+	}
+
+	// 🐢 Step 2: Fetch from DB if not in cache
+	project, err := r.projectRepo.GetProjectByID(uint(projectID), userID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{"message": "project not found"})
+	}
+
+	// 💾 Step 3: Cache the result for 10 mins
+	_ = redisdb.Set(cacheKey, project)
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "successful (from DB)",
+		"data":    project,
 	})
 }

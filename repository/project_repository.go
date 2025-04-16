@@ -10,6 +10,7 @@ type ProjectRepository interface {
 	GetUserProjects(userID uint) ([]models.Project, error)
 	IsProjectExist(name string, userID uint) bool
 	IsProjectExistByID(id uint, userID uint) bool
+	GetProjectByID(id uint, userID uint) (*models.Project, error)
 	UpdateProject(project *models.Project) error
 	DeleteProject(id uint, userID uint) error
 }
@@ -34,16 +35,34 @@ func (r *projectRepo) GetUserProjects(userID uint) ([]models.Project, error) {
 
 func (r *projectRepo) IsProjectExist(name string, userID uint) bool {
 	var project models.Project
-	err := r.db.Model(&models.Project{}).Where("name = ? AND user_id = ?", name, userID).First(&project).Error
+	err := r.db.Model(&models.Project{}).
+		Where("name = ? AND user_id = ?", name, userID).
+		First(&project).Error
 
 	return err == nil
 }
 
 func (r *projectRepo) IsProjectExistByID(id uint, userID uint) bool {
 	var project models.Project
-	err := r.db.Model(&models.Project{}).Where("ID = ? AND user_id = ?", id, userID).First(&project).Error
+	err := r.db.Model(&models.Project{}).
+		Where("ID = ? AND user_id = ?", id, userID).
+		First(&project).Error
 
 	return err == nil
+}
+
+func (r *projectRepo) GetProjectByID(id uint, userID uint) (*models.Project, error) {
+	var project models.Project
+	err := r.db.Model(&models.Project{}).
+		Preload("User").
+		Where("ID = ? AND user_id = ?", id, userID).
+		First(&project).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &project, nil
 }
 
 func (r *projectRepo) UpdateProject(project *models.Project) error {

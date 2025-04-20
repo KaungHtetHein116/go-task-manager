@@ -1,0 +1,8 @@
+/vendor
+.env
+.env.local
+.DS_Store
+.vscode
+main
+/tmp
+/docker-volumes

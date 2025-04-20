@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/KaungHtetHein116/personal-task-manager/api/transport"
 	"github.com/go-playground/validator/v10"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 type ValidationError struct {
@@ -22,21 +23,17 @@ func BindAndValidateDecorator[T any](fn func(echo.Context, *T) error) echo.Handl
 	return func(c echo.Context) error {
 		input := new(T)
 		if err := c.Bind(input); err != nil {
-			return c.JSON(http.StatusBadRequest, echo.Map{
-				"message": "invalid request body",
-			})
+			return transport.NewApiErrorResponse(c,
+				http.StatusBadRequest, err.Error(), nil)
 		}
 
 		if err := c.Validate(input); err != nil {
 			if formattedErrors, ok := FormatValidationErrors(err); ok {
-				return c.JSON(402, echo.Map{
-					"message": "validation failed",
-					"data":    formattedErrors,
-				})
+				return transport.NewApiErrorResponse(c,
+					http.StatusBadRequest, err.Error(), formattedErrors)
 			}
-			return c.JSON(http.StatusInternalServerError, echo.Map{
-				"message": "internal validation error",
-			})
+			return transport.NewApiErrorResponse(c,
+				http.StatusBadRequest, err.Error(), nil)
 		}
 
 		return fn(c, input)

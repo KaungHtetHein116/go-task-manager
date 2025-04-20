@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/KaungHtetHein116/personal-task-manager/api/transport"
 	"github.com/KaungHtetHein116/personal-task-manager/api/v1/models"
 	"github.com/KaungHtetHein116/personal-task-manager/api/v1/request"
 	"github.com/KaungHtetHein116/personal-task-manager/api/v1/response"
@@ -21,37 +22,22 @@ func NewProjectHandler(repo repository.ProjectRepository) *ProjectHandler {
 	return &ProjectHandler{projectRepo: repo}
 }
 
-func (r *ProjectHandler) CreateProject(c echo.Context) error {
-	var input *request.CreateProjectInput
-
-	if err := c.Bind(&input); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"message": "invalid input",
-		})
-	}
-
+func (r *ProjectHandler) CreateProject(c echo.Context, input *request.CreateProjectInput) error {
 	userID := c.Get("user_id").(uint)
 
 	if r.projectRepo.IsProjectExist(input.Name, userID) {
-		return c.JSON(http.StatusConflict, echo.Map{
-			"message": "project name already exists",
-		})
+		return transport.NewApiErrorResponse(c, http.StatusConflict, "project name already exists", nil)
 	}
 
 	project := &models.Project{Name: input.Name, UserID: userID, Description: &input.Description}
 	if err := r.projectRepo.CreateProject(project); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": "failed to create in db",
-		})
+		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "failed to create in db", nil)
 	}
 
-	return c.JSON(http.StatusCreated, echo.Map{
-		"message": "Project created",
-		"data": echo.Map{
-			"ID":          project.ID,
-			"name":        input.Name,
-			"description": input.Description,
-		},
+	return transport.NewApiCreateSuccessResponse(c, "Project created", echo.Map{
+		"ID":          project.ID,
+		"name":        input.Name,
+		"description": input.Description,
 	})
 }
 
@@ -62,9 +48,7 @@ func (r *ProjectHandler) GetProjects(c echo.Context) error {
 
 	projects, err := r.projectRepo.GetUserProjects(userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": "db get error",
-		})
+		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "db get error", nil)
 	}
 
 	for _, project := range projects {
@@ -76,32 +60,19 @@ func (r *ProjectHandler) GetProjects(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"message": "successful",
-		"data":    resp,
-	})
+	return transport.NewApiSuccessResponse(c, http.StatusOK, "successful", resp)
 }
 
-func (r *ProjectHandler) UpdateProject(c echo.Context) error {
+func (r *ProjectHandler) UpdateProject(c echo.Context, input *request.CreateProjectInput) error {
 	idParam := c.Param("id")
 	projectID, _ := strconv.Atoi(idParam)
 
-	var input request.CreateProjectInput
 	userID := c.Get("user_id").(uint)
-
-	// check json valid
-	if err := c.Bind(&input); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"message": "invalid input",
-		})
-	}
 
 	// check if project exsit
 	exist := r.projectRepo.IsProjectExistByID(uint(projectID), userID)
 	if !exist {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"message": "project not found",
-		})
+		return transport.NewApiErrorResponse(c, http.StatusNotFound, "project not found", nil)
 	}
 
 	var project models.Project
@@ -114,18 +85,13 @@ func (r *ProjectHandler) UpdateProject(c echo.Context) error {
 
 	// Save the updated project
 	if err := r.projectRepo.UpdateProject(&project); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": "failed to update project",
-		})
+		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "failed to update project", nil)
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"message": "project updated successfully",
-		"data": echo.Map{
-			"id":          project.ID,
-			"name":        project.Name,
-			"description": project.Description,
-		},
+	return transport.NewApiSuccessResponse(c, http.StatusOK, "project updated successfully", echo.Map{
+		"id":          project.ID,
+		"name":        project.Name,
+		"description": project.Description,
 	})
 }
 
@@ -137,27 +103,21 @@ func (r *ProjectHandler) DeleteProject(c echo.Context) error {
 	// check if project exsit
 	exist := r.projectRepo.IsProjectExistByID(uint(projectID), userID)
 	if !exist {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"message": "project not found",
-		})
+		return transport.NewApiErrorResponse(c, http.StatusNotFound, "project not found", nil)
 	}
 
 	if err := r.projectRepo.DeleteProject(uint(projectID), userID); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": "database delete error",
-		})
+		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "database delete error", nil)
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"message": "project deleted",
-	})
+	return transport.NewApiSuccessResponse(c, http.StatusOK, "project deleted", nil)
 }
 
 func (r *ProjectHandler) GetProjectByID(c echo.Context) error {
 	idParam := c.Param("id")
 	projectID, err := strconv.Atoi(idParam)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"message": "invalid ID"})
+		return transport.NewApiErrorResponse(c, http.StatusBadRequest, "invalid ID", nil)
 	}
 
 	userID := c.Get("user_id").(uint)
@@ -168,23 +128,17 @@ func (r *ProjectHandler) GetProjectByID(c echo.Context) error {
 	found, _ := redisdb.Get(cacheKey, &cachedProject)
 
 	if found {
-		return c.JSON(http.StatusOK, echo.Map{
-			"message": "successful (from cache)",
-			"data":    cachedProject,
-		})
+		return transport.NewApiSuccessResponse(c, http.StatusOK, "successful (from cache)", cachedProject)
 	}
 
 	// 🐢 Step 2: Fetch from DB if not in cache
 	project, err := r.projectRepo.GetProjectByID(uint(projectID), userID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"message": "project not found"})
+		return transport.NewApiErrorResponse(c, http.StatusNotFound, "project not found", nil)
 	}
 
 	// 💾 Step 3: Cache the result for 10 mins
 	_ = redisdb.Set(cacheKey, project)
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"message": "successful (from DB)",
-		"data":    project,
-	})
+	return transport.NewApiSuccessResponse(c, http.StatusOK, "successful (from DB)", project)
 }

@@ -3,7 +3,7 @@ version: "3.8"
 services:
   db:
     image: postgres:15
-    container_name: taskmanager_postgres
+    container_name: task-manager-api-postgres
     restart: always
     ports:
       - "5432:5432"
@@ -16,7 +16,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: taskmanager_redis
+    container_name: task-manager-api-redis
     restart: always
     ports:
       - "6379:6379"

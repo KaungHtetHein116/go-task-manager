@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
 args_bin = []
 bin = "./tmp/main"
-cmd = "go build -o ./tmp/main ./cmd/."
+cmd = "go build -o ./tmp/main ."
 delay = 1000
 exclude_dir = ["assets", "tmp", "vendor", "testdata", "docker-volumes"]
 exclude_file = []
@@ -19,6 +19,13 @@ kill_delay = "0s"
 log = "build-errors.log"
 send_interrupt = false
 stop_on_error = true
+
+[color]
+app = ""
+build = "yellow"
+main = "magenta"
+runner = "green"
+watcher = "cyan"
 
 [misc]
 clean_on_exit = false

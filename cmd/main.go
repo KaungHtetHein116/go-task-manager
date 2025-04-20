@@ -1,63 +1,36 @@
-package main
+package cmd
 
 import (
+	"errors"
+	"fmt"
 	"os"
 
-	"github.com/KaungHtetHein116/personal-task-manager/database"
-	redisdb "github.com/KaungHtetHein116/personal-task-manager/internal/redis"
-	"github.com/KaungHtetHein116/personal-task-manager/repository"
-	"github.com/KaungHtetHein116/personal-task-manager/routes"
-	"github.com/KaungHtetHein116/personal-task-manager/service"
-	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	log "github.com/sirupsen/logrus"
+	"github.com/KaungHtetHein116/personal-task-manager/cmd/server"
+	"github.com/spf13/cobra"
 )
 
-func init() {
-	// Configure logrus format and level
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp: true,
-	})
-	log.SetLevel(log.InfoLevel)
+var rootCmd = &cobra.Command{
+	Use:          "server",
+	Short:        "Setting Server",
+	SilenceUsage: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("requires at least one arg")
+		}
+
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Welcome to Task Manager Api")
+	},
 }
 
-func main() {
-	// 1. Environment variables must be loaded first
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+func init() {
+	rootCmd.AddCommand(server.StartDevCmd)
+}
 
-	// 2. Database connection must be established before creating repositories
-	db := database.ConnectDB()
-	redisdb.InitRedis()
-
-	// 3. Echo instance must be created before adding routes
-	e := echo.New()
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: `${time_rfc3339} ${status} ${method} ${uri} ${latency_human}` + "\n",
-	}))
-
-	// 4. Repositories must be created before handlers
-	authRepo := repository.NewUserRepository(db)
-	projectRepo := repository.NewProjectRepository(db)
-
-	// 5. Handlers must be created before setting up routes
-	authHandler := service.NewAuthService(authRepo)
-	projectHandler := service.NewProjectService(projectRepo)
-
-	// 6. Routes must be set up before starting the server
-	routes.SetupRoutes(e, authHandler, projectHandler)
-
-	// 7. Port must be configured before starting the server
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		log.Fatal("APP_PORT is not set in the environment variables")
-	}
-	log.Infof("Starting server on port %s...", port)
-
-	// 8. Server must be started last
-	if err := e.Start(":" + port); err != nil {
-		log.WithError(err).Fatal("Failed to start server")
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(-1)
 	}
 }

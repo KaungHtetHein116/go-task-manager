@@ -6,7 +6,6 @@ import (
 	"github.com/KaungHtetHein116/personal-task-manager/internal/entity"
 	"github.com/KaungHtetHein116/personal-task-manager/internal/repository"
 	"github.com/KaungHtetHein116/personal-task-manager/utils"
-	"github.com/jinzhu/gorm"
 )
 
 type UserUsecase interface {
@@ -24,10 +23,12 @@ func NewUserUsecase(repo repository.UserRepository) UserUsecase {
 }
 
 func (u *userUsecase) Register(name, email, password string) error {
-	// Check if email already exists
 	existingUser, err := u.repo.GetUserByEmail(email)
-	if err == nil && existingUser != nil {
-		return errors.New("email already exists")
+	if err != nil && !errors.Is(err, utils.ErrRecordNotFound) {
+		return err
+	}
+	if existingUser != nil {
+		return utils.ErrDuplicateEntry
 	}
 
 	user := &entity.User{
@@ -40,29 +41,30 @@ func (u *userUsecase) Register(name, email, password string) error {
 }
 
 func (u *userUsecase) Login(email, password string) (string, *entity.User, error) {
-	// Get user by email
 	user, err := u.repo.GetUserByEmail(email)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", nil, errors.New("invalid credentials")
+		if errors.Is(err, utils.ErrRecordNotFound) {
+			return "", nil, utils.ErrInvalidData
 		}
 		return "", nil, err
 	}
 
-	// Compare password
 	if !utils.ComparePasswords(user.Password, password) {
-		return "", nil, errors.New("invalid password")
+		return "", nil, utils.ErrInvalidData
 	}
 
-	// Generate JWT token
 	token, err := utils.GenerateJWTToken(user.ID)
 	if err != nil {
-		return "", nil, errors.New("token generation error")
+		return "", nil, err
 	}
 
 	return token, user, nil
 }
 
 func (u *userUsecase) GetProfile(userID uint) (*entity.User, error) {
-	return u.repo.GetUserByID(userID)
+	user, err := u.repo.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }

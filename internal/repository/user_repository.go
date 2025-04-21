@@ -1,9 +1,8 @@
 package repository
 
 import (
-	"errors"
-
 	"github.com/KaungHtetHein116/personal-task-manager/internal/entity"
+	"github.com/KaungHtetHein116/personal-task-manager/utils"
 	"gorm.io/gorm"
 )
 
@@ -22,18 +21,8 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 func (r *userRepo) CreateUser(user *entity.User) error {
-	err := r.db.Create(user).Error
-	if err != nil {
-		// Check for unique constraint violation
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return errors.New("user with this email already exists")
-		}
-		// Check for invalid data
-		if errors.Is(err, gorm.ErrInvalidData) {
-			return errors.New("invalid user data provided")
-		}
-		// Return a generic database error for other cases
-		return errors.New("failed to create user: " + err.Error())
+	if err := r.db.Create(user).Error; err != nil {
+		return utils.HandleGormError(err, "user")
 	}
 	return nil
 }
@@ -41,17 +30,15 @@ func (r *userRepo) CreateUser(user *entity.User) error {
 func (r *userRepo) GetUserByEmail(email string) (*entity.User, error) {
 	var user entity.User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
-		return nil, err
+		return nil, utils.HandleGormError(err, "user")
 	}
-
 	return &user, nil
 }
 
 func (r *userRepo) GetUserByID(id uint) (*entity.User, error) {
 	var user entity.User
 	if err := r.db.First(&user, id).Error; err != nil {
-		return nil, err
+		return nil, utils.HandleGormError(err, "user")
 	}
-
 	return &user, nil
 }

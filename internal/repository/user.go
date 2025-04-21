@@ -3,14 +3,14 @@ package repository
 import (
 	"errors"
 
-	"github.com/KaungHtetHein116/personal-task-manager/api/v1/models"
+	"github.com/KaungHtetHein116/personal-task-manager/internal/entity"
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
-	CreateUser(user *models.User) error
-	GetUserByEmail(email string) (*models.User, error)
-	GetUserByID(id uint) (*models.User, error)
+	CreateUser(user *entity.User) error
+	GetUserByEmail(email string) (*entity.User, error)
+	GetUserByID(id uint) (*entity.User, error)
 }
 
 type userRepo struct {
@@ -21,7 +21,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepo{db: db}
 }
 
-func (r *userRepo) CreateUser(user *models.User) error {
+func (r *userRepo) CreateUser(user *entity.User) error {
 	err := r.db.Create(user).Error
 	if err != nil {
 		// Check for unique constraint violation
@@ -38,8 +38,8 @@ func (r *userRepo) CreateUser(user *models.User) error {
 	return nil
 }
 
-func (r *userRepo) GetUserByEmail(email string) (*models.User, error) {
-	var user models.User
+func (r *userRepo) GetUserByEmail(email string) (*entity.User, error) {
+	var user entity.User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
@@ -47,8 +47,8 @@ func (r *userRepo) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *userRepo) GetUserByID(id uint) (*models.User, error) {
-	var user models.User
+func (r *userRepo) GetUserByID(id uint) (*entity.User, error) {
+	var user entity.User
 	if err := r.db.First(&user, id).Error; err != nil {
 		return nil, err
 	}

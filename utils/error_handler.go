@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/KaungHtetHein116/personal-task-manager/api/transport"
+	"github.com/KaungHtetHein116/personal-task-manager/pkg/constants"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -26,7 +27,7 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 		validationErrors, _ := FormatValidationErrors(err)
 
 		transport.NewApiErrorResponse(c,
-			http.StatusBadRequest, ErrValidationFailed,
+			http.StatusBadRequest, constants.ErrValidationFailed,
 			validationErrors)
 
 		return
@@ -35,7 +36,14 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	// Handle GORM record not found errors
 	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, ErrRecordNotFound) {
 		transport.NewApiErrorResponse(c,
-			http.StatusNotFound, ErrErrorRecordNotFound,
+			http.StatusNotFound, constants.ErrErrorRecordNotFound,
+			nil)
+		return
+	}
+
+	if errors.Is(err, ErrDuplicateEntry) {
+		transport.NewApiErrorResponse(c,
+			http.StatusBadRequest, constants.ErrDuplicatedData,
 			nil)
 		return
 	}

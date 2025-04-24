@@ -5,6 +5,8 @@ import (
 
 	"github.com/KaungHtetHein116/personal-task-manager/internal/entity"
 	"github.com/KaungHtetHein116/personal-task-manager/internal/repository"
+	"github.com/KaungHtetHein116/personal-task-manager/utils"
+	"gorm.io/gorm"
 )
 
 type ProjectUsecase interface {
@@ -26,7 +28,7 @@ func NewProjectUsecase(repo repository.ProjectRepository) ProjectUsecase {
 
 func (u *projectUsecase) CreateProject(userID uint, name string, description *string) (*entity.Project, error) {
 	if u.repo.IsProjectExist(name, userID) {
-		return nil, errors.New("project name already exists")
+		return nil, utils.ErrProjectNotFound
 	}
 
 	project := &entity.Project{Name: name, UserID: userID, Description: description}
@@ -42,7 +44,13 @@ func (u *projectUsecase) GetProjects(userID uint) ([]entity.Project, error) {
 }
 
 func (u *projectUsecase) UpdateProject(project *entity.Project) error {
-	return u.repo.UpdateProject(project)
+	err := u.repo.UpdateProject(project)
+
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return utils.ErrDuplicateEntry
+	}
+
+	return err
 }
 
 func (u *projectUsecase) DeleteProject(projectID, userID uint) error {

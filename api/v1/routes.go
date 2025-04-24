@@ -4,7 +4,7 @@ import (
 	"github.com/KaungHtetHein116/personal-task-manager/api/v1/handler"
 	"github.com/KaungHtetHein116/personal-task-manager/internal/repository"
 	"github.com/KaungHtetHein116/personal-task-manager/internal/usecase"
-	constants "github.com/KaungHtetHein116/personal-task-manager/pkg/constant"
+	constants "github.com/KaungHtetHein116/personal-task-manager/pkg/constants"
 	"github.com/KaungHtetHein116/personal-task-manager/utils"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"

@@ -7,6 +7,7 @@ import (
 	"github.com/KaungHtetHein116/personal-task-manager/api/transport"
 	"github.com/KaungHtetHein116/personal-task-manager/api/v1/request"
 	"github.com/KaungHtetHein116/personal-task-manager/internal/usecase"
+	"github.com/KaungHtetHein116/personal-task-manager/pkg/constants"
 	"github.com/KaungHtetHein116/personal-task-manager/utils"
 	"github.com/labstack/echo/v4"
 )
@@ -25,7 +26,7 @@ func (h *UserHandler) Register(c echo.Context, input *request.RegisterUserInput)
 		// Check for specific business logic errors
 		switch {
 		case errors.Is(err, utils.ErrDuplicateEntry):
-			return transport.NewApiErrorResponse(c, http.StatusConflict, utils.ErrEmailAlreadyRegistered, nil)
+			return transport.NewApiErrorResponse(c, http.StatusConflict, constants.ErrEmailAlreadyRegistered, nil)
 		case errors.Is(err, utils.ErrInvalidData):
 			return transport.NewApiErrorResponse(c, http.StatusBadRequest, err.Error(), nil)
 		default:
@@ -34,7 +35,7 @@ func (h *UserHandler) Register(c echo.Context, input *request.RegisterUserInput)
 		}
 	}
 
-	return transport.NewApiCreateSuccessResponse(c, utils.SuccUserRegistered, nil)
+	return transport.NewApiCreateSuccessResponse(c, constants.SuccUserRegistered, nil)
 }
 
 func (h *UserHandler) Login(c echo.Context, input *request.LoginUserInput) error {
@@ -48,7 +49,7 @@ func (h *UserHandler) Login(c echo.Context, input *request.LoginUserInput) error
 		return err
 	}
 
-	return transport.NewApiSuccessResponse(c, http.StatusOK, utils.SuccLoginSuccessful, echo.Map{
+	return transport.NewApiSuccessResponse(c, http.StatusOK, constants.SuccLoginSuccessful, echo.Map{
 		"name":  user.Username,
 		"token": token,
 	})
@@ -59,8 +60,8 @@ func (h *UserHandler) GetProfile(c echo.Context) error {
 	user, err := h.userUsecase.GetProfile(userID)
 
 	if err != nil {
-		return transport.NewApiErrorResponse(c, http.StatusNotFound, utils.ErrUserNotFound, nil)
+		return transport.NewApiErrorResponse(c, http.StatusNotFound, constants.ErrUserNotFound, nil)
 	}
 
-	return transport.NewApiSuccessResponse(c, http.StatusOK, utils.Successful, user)
+	return transport.NewApiSuccessResponse(c, http.StatusOK, constants.Successful, user)
 }

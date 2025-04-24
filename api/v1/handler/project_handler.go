@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,6 +12,8 @@ import (
 	"github.com/KaungHtetHein116/personal-task-manager/internal/entity"
 	redisdb "github.com/KaungHtetHein116/personal-task-manager/internal/redis"
 	"github.com/KaungHtetHein116/personal-task-manager/internal/usecase"
+	"github.com/KaungHtetHein116/personal-task-manager/pkg/constants"
+	"github.com/KaungHtetHein116/personal-task-manager/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -27,13 +30,13 @@ func (h *ProjectHandler) CreateProject(c echo.Context, input *request.CreateProj
 
 	project, err := h.usecase.CreateProject(userID, input.Name, &input.Description)
 	if err != nil {
-		if err.Error() == "project name already exists" {
-			return transport.NewApiErrorResponse(c, http.StatusConflict, err.Error(), nil)
+		if errors.Is(err, utils.ErrProjectNotFound) {
+			return transport.NewApiErrorResponse(c, http.StatusConflict, constants.ErrProjectAlreadyExist, nil)
 		}
-		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "failed to create project", nil)
+		return err
 	}
 
-	return transport.NewApiCreateSuccessResponse(c, "Project created", echo.Map{
+	return transport.NewApiCreateSuccessResponse(c, constants.SuccProjectCreated, echo.Map{
 		"ID":          project.ID,
 		"name":        project.Name,
 		"description": project.Description,
@@ -47,7 +50,7 @@ func (h *ProjectHandler) GetProjects(c echo.Context) error {
 
 	projects, err := h.usecase.GetProjects(userID)
 	if err != nil {
-		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "failed to get projects", nil)
+		return err
 	}
 
 	for _, project := range projects {
@@ -59,7 +62,7 @@ func (h *ProjectHandler) GetProjects(c echo.Context) error {
 		})
 	}
 
-	return transport.NewApiSuccessResponse(c, http.StatusOK, "successful", resp)
+	return transport.NewApiSuccessResponse(c, http.StatusOK, constants.Successful, resp)
 }
 
 func (h *ProjectHandler) UpdateProject(c echo.Context, input *request.CreateProjectInput) error {
@@ -69,7 +72,7 @@ func (h *ProjectHandler) UpdateProject(c echo.Context, input *request.CreateProj
 	userID := c.Get("user_id").(uint)
 
 	if !h.usecase.IsProjectExistByID(uint(projectID), userID) {
-		return transport.NewApiErrorResponse(c, http.StatusNotFound, "project not found", nil)
+		return transport.NewApiErrorResponse(c, http.StatusNotFound, constants.ErrProjectNotFound, nil)
 	}
 
 	project := &entity.Project{
@@ -79,10 +82,12 @@ func (h *ProjectHandler) UpdateProject(c echo.Context, input *request.CreateProj
 	}
 
 	if err := h.usecase.UpdateProject(project); err != nil {
-		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "failed to update project", nil)
+		if errors.Is(err, utils.ErrDuplicateEntry) {
+			return err
+		}
 	}
 
-	return transport.NewApiSuccessResponse(c, http.StatusOK, "project updated successfully", echo.Map{
+	return transport.NewApiSuccessResponse(c, http.StatusOK, constants.SuccProjectUpdated, echo.Map{
 		"id":          project.ID,
 		"name":        project.Name,
 		"description": project.Description,
@@ -95,21 +100,21 @@ func (h *ProjectHandler) DeleteProject(c echo.Context) error {
 	userID := c.Get("user_id").(uint)
 
 	if !h.usecase.IsProjectExistByID(uint(projectID), userID) {
-		return transport.NewApiErrorResponse(c, http.StatusNotFound, "project not found", nil)
+		return transport.NewApiErrorResponse(c, http.StatusNotFound, constants.ErrProjectNotFound, nil)
 	}
 
 	if err := h.usecase.DeleteProject(uint(projectID), userID); err != nil {
-		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "failed to delete project", nil)
+		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, constants.ErrFailedDeleteProject, nil)
 	}
 
-	return transport.NewApiSuccessResponse(c, http.StatusOK, "project deleted", nil)
+	return transport.NewApiSuccessResponse(c, http.StatusOK, constants.ErrProjectDeleted, nil)
 }
 
 func (h *ProjectHandler) GetProjectByID(c echo.Context) error {
 	idParam := c.Param("id")
 	projectID, err := strconv.Atoi(idParam)
 	if err != nil {
-		return transport.NewApiErrorResponse(c, http.StatusBadRequest, "invalid ID", nil)
+		return transport.NewApiErrorResponse(c, http.StatusBadRequest, constants.ErrInvalidProjectID, nil)
 	}
 
 	userID := c.Get("user_id").(uint)
@@ -119,15 +124,15 @@ func (h *ProjectHandler) GetProjectByID(c echo.Context) error {
 	found, _ := redisdb.Get(cacheKey, &cachedProject)
 
 	if found {
-		return transport.NewApiSuccessResponse(c, http.StatusOK, "successful (from cache)", cachedProject)
+		return transport.NewApiSuccessResponse(c, http.StatusOK, constants.Successful+" (from cache)", cachedProject)
 	}
 
 	project, err := h.usecase.GetProjectByID(uint(projectID), userID)
 	if err != nil {
-		return transport.NewApiErrorResponse(c, http.StatusNotFound, "project not found", nil)
+		return transport.NewApiErrorResponse(c, http.StatusNotFound, constants.ErrProjectNotFound, nil)
 	}
 
 	_ = redisdb.Set(cacheKey, project)
 
-	return transport.NewApiSuccessResponse(c, http.StatusOK, "successful (from DB)", project)
+	return transport.NewApiSuccessResponse(c, http.StatusOK, constants.Successful+" (from DB)", project)
 }

@@ -82,6 +82,9 @@ func HandleGormError(err error, entity string) error {
 	case errors.Is(err, gorm.ErrInvalidDB):
 		return fmt.Errorf("%s: %w", entity, ErrConnectionFailed)
 
+	case errors.Is(err, gorm.ErrDuplicatedKey):
+		return fmt.Errorf("%s: %w", entity, ErrDuplicateEntry)
+
 	default:
 		// Check for specific error strings that might indicate other types of errors
 		errStr := err.Error()

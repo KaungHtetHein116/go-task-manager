@@ -26,6 +26,8 @@ func StartServer() {
 
 	e := echo.New()
 	e.Validator = &utils.CustomValidator{Validator: validator.New()}
+	e.HTTPErrorHandler = utils.CustomHTTPErrorHandler
+
 	middleware.RegisterBasicMiddlewares(e)
 	middleware.AuthMiddleware(e)
 

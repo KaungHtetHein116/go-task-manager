@@ -3,14 +3,15 @@ package usecase
 import (
 	"errors"
 
+	"github.com/KaungHtetHein116/personal-task-manager/api/v1/request"
 	"github.com/KaungHtetHein116/personal-task-manager/internal/entity"
 	"github.com/KaungHtetHein116/personal-task-manager/internal/repository"
 	"github.com/KaungHtetHein116/personal-task-manager/utils"
 )
 
 type UserUsecase interface {
-	Register(name, email, password string) error
-	Login(email, password string) (string, *entity.User, error)
+	Register(input *request.RegisterUserInput) error
+	Login(input *request.LoginUserInput) (string, *entity.User, error)
 	GetProfile(userID uint) (*entity.User, error)
 }
 
@@ -22,8 +23,8 @@ func NewUserUsecase(repo repository.UserRepository) UserUsecase {
 	return &userUsecase{repo}
 }
 
-func (u *userUsecase) Register(name, email, password string) error {
-	existingUser, err := u.repo.GetUserByEmail(email)
+func (u *userUsecase) Register(input *request.RegisterUserInput) error {
+	existingUser, err := u.repo.GetUserByEmail(input.Email)
 	if err != nil && !errors.Is(err, utils.ErrRecordNotFound) {
 		return err
 	}
@@ -32,16 +33,16 @@ func (u *userUsecase) Register(name, email, password string) error {
 	}
 
 	user := &entity.User{
-		Username: name,
-		Email:    email,
-		Password: utils.GenerateHashedPassword(password),
+		Username: input.Username,
+		Email:    input.Email,
+		Password: utils.GenerateHashedPassword(input.Password),
 	}
 
 	return u.repo.CreateUser(user)
 }
 
-func (u *userUsecase) Login(email, password string) (string, *entity.User, error) {
-	user, err := u.repo.GetUserByEmail(email)
+func (u *userUsecase) Login(input *request.LoginUserInput) (string, *entity.User, error) {
+	user, err := u.repo.GetUserByEmail(input.Email)
 	if err != nil {
 		if errors.Is(err, utils.ErrRecordNotFound) {
 			return "", nil, utils.ErrInvalidData
@@ -49,7 +50,7 @@ func (u *userUsecase) Login(email, password string) (string, *entity.User, error
 		return "", nil, err
 	}
 
-	if !utils.ComparePasswords(user.Password, password) {
+	if !utils.ComparePasswords(user.Password, input.Password) {
 		return "", nil, utils.ErrInvalidData
 	}
 

@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/KaungHtetHein116/personal-task-manager/api/transport"
 	"github.com/KaungHtetHein116/personal-task-manager/api/v1/request"
 	"github.com/KaungHtetHein116/personal-task-manager/internal/usecase"
+	"github.com/KaungHtetHein116/personal-task-manager/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -18,27 +20,35 @@ func NewUserHandler(usecase usecase.UserUsecase) *UserHandler {
 }
 
 func (h *UserHandler) Register(c echo.Context, input *request.RegisterUserInput) error {
-	err := h.userUsecase.Register(input.Name, input.Email, input.Password)
+	err := h.userUsecase.Register(input)
 	if err != nil {
-		if err.Error() == "email already exists" {
-			return transport.NewApiErrorResponse(c, http.StatusConflict, err.Error(), nil)
+		// Check for specific business logic errors
+		switch {
+		case errors.Is(err, utils.ErrDuplicateEntry):
+			return transport.NewApiErrorResponse(c, http.StatusConflict, utils.ErrEmailAlreadyRegistered, nil)
+		case errors.Is(err, utils.ErrInvalidData):
+			return transport.NewApiErrorResponse(c, http.StatusBadRequest, err.Error(), nil)
+		default:
+			// Let the CustomHTTPErrorHandler handle unexpected errors
+			return err
 		}
-		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "cannot create the user", nil)
 	}
 
-	return transport.NewApiCreateSuccessResponse(c, "user created successfully", nil)
+	return transport.NewApiCreateSuccessResponse(c, utils.SuccUserRegistered, nil)
 }
 
 func (h *UserHandler) Login(c echo.Context, input *request.LoginUserInput) error {
-	token, user, err := h.userUsecase.Login(input.Email, input.Password)
+	token, user, err := h.userUsecase.Login(input)
+
 	if err != nil {
-		if err.Error() == "invalid credentials" || err.Error() == "invalid password" {
+
+		if errors.Is(err, utils.ErrInvalidData) {
 			return transport.NewApiErrorResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		}
-		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "unknown error", nil)
+		return err
 	}
 
-	return transport.NewApiSuccessResponse(c, http.StatusOK, "login successful", echo.Map{
+	return transport.NewApiSuccessResponse(c, http.StatusOK, utils.SuccLoginSuccessful, echo.Map{
 		"name":  user.Username,
 		"token": token,
 	})
@@ -49,8 +59,8 @@ func (h *UserHandler) GetProfile(c echo.Context) error {
 	user, err := h.userUsecase.GetProfile(userID)
 
 	if err != nil {
-		return transport.NewApiErrorResponse(c, http.StatusNotFound, "user not found", nil)
+		return transport.NewApiErrorResponse(c, http.StatusNotFound, utils.ErrUserNotFound, nil)
 	}
 
-	return transport.NewApiSuccessResponse(c, http.StatusOK, "successful", user)
+	return transport.NewApiSuccessResponse(c, http.StatusOK, utils.Successful, user)
 }

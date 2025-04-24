@@ -5,7 +5,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/KaungHtetHein116/personal-task-manager/api/transport"
 	constants "github.com/KaungHtetHein116/personal-task-manager/pkg/constant"
+	"github.com/KaungHtetHein116/personal-task-manager/utils"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
@@ -44,9 +46,7 @@ func JWTMiddleware() echo.MiddlewareFunc {
 			authHeader := c.Request().Header.Get("Authorization")
 
 			if authHeader == "" {
-				return c.JSON(http.StatusUnauthorized, echo.Map{
-					"message": "Unthorized",
-				})
+				return transport.NewApiErrorResponse(c, http.StatusUnauthorized, utils.ErrUnauthorized, nil)
 			}
 
 			tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
@@ -55,9 +55,7 @@ func JWTMiddleware() echo.MiddlewareFunc {
 			})
 
 			if err != nil || !token.Valid {
-				return c.JSON(http.StatusUnauthorized, echo.Map{
-					"message": "Invalid token",
-				})
+				return transport.NewApiErrorResponse(c, http.StatusUnauthorized, utils.ErrInvalidToken, nil)
 			}
 
 			// Add user id to context

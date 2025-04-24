@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/KaungHtetHein116/personal-task-manager/api/transport"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
@@ -23,17 +22,11 @@ func BindAndValidateDecorator[T any](fn func(echo.Context, *T) error) echo.Handl
 	return func(c echo.Context) error {
 		input := new(T)
 		if err := c.Bind(input); err != nil {
-			return transport.NewApiErrorResponse(c,
-				http.StatusBadRequest, err.Error(), nil)
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
 		}
 
 		if err := c.Validate(input); err != nil {
-			if formattedErrors, ok := FormatValidationErrors(err); ok {
-				return transport.NewApiErrorResponse(c,
-					http.StatusBadRequest, err.Error(), formattedErrors)
-			}
-			return transport.NewApiErrorResponse(c,
-				http.StatusBadRequest, err.Error(), nil)
+			return err // This will be caught by our CustomHTTPErrorHandler
 		}
 
 		return fn(c, input)

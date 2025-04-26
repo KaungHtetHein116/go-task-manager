@@ -57,7 +57,8 @@ func (h *UserHandler) Login(c echo.Context, input *request.LoginUserInput) error
 
 func (h *UserHandler) GetProfile(c echo.Context) error {
 	userID := c.Get("user_id").(uint)
-	user, err := h.userUsecase.GetProfile(userID)
+	includeProjects := c.QueryParam("include") == "projects"
+	user, err := h.userUsecase.GetProfile(userID, includeProjects)
 
 	if err != nil {
 		return transport.NewApiErrorResponse(c, http.StatusNotFound, constants.ErrUserNotFound, nil)

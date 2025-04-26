@@ -12,7 +12,7 @@ import (
 type UserUsecase interface {
 	Register(input *request.RegisterUserInput) error
 	Login(input *request.LoginUserInput) (string, *entity.User, error)
-	GetProfile(userID uint) (*entity.User, error)
+	GetProfile(userID uint, includeProjects bool) (*entity.User, error)
 }
 
 type userUsecase struct {
@@ -62,8 +62,8 @@ func (u *userUsecase) Login(input *request.LoginUserInput) (string, *entity.User
 	return token, user, nil
 }
 
-func (u *userUsecase) GetProfile(userID uint) (*entity.User, error) {
-	user, err := u.repo.GetUserByID(userID)
+func (u *userUsecase) GetProfile(userID uint, includeProjects bool) (*entity.User, error) {
+	user, err := u.repo.GetUserByID(userID, includeProjects)
 	if err != nil {
 		return nil, err
 	}

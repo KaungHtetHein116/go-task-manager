@@ -9,7 +9,7 @@ import (
 type UserRepository interface {
 	CreateUser(user *entity.User) error
 	GetUserByEmail(email string) (*entity.User, error)
-	GetUserByID(id uint) (*entity.User, error)
+	GetUserByID(id uint, includeProjects bool) (*entity.User, error)
 }
 
 type userRepo struct {
@@ -35,9 +35,13 @@ func (r *userRepo) GetUserByEmail(email string) (*entity.User, error) {
 	return &user, nil
 }
 
-func (r *userRepo) GetUserByID(id uint) (*entity.User, error) {
+func (r *userRepo) GetUserByID(id uint, includeProjects bool) (*entity.User, error) {
 	var user entity.User
-	if err := r.db.First(&user, id).Error; err != nil {
+	query := r.db
+	if includeProjects {
+		query = query.Preload("Projects")
+	}
+	if err := query.First(&user, id).Error; err != nil {
 		return nil, utils.HandleGormError(err, "user")
 	}
 	return &user, nil

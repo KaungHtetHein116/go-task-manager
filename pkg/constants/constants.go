@@ -3,6 +3,7 @@ package constants
 const API_PREFIX = "/v1"
 const USER_API_PREFIX = API_PREFIX + "/users"
 const PROJECT_API_PREFIX = API_PREFIX + "/projects"
+const TASK_API_PREFIX = API_PREFIX + "/tasks"
 
 const (
 	MSG_SUCCESS                = "Success"

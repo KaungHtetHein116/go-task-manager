@@ -33,3 +33,16 @@ func RegisterProjectRoute(e *echo.Echo, db *gorm.DB) {
 	projectRoutes.PATCH("/:id", utils.BindAndValidateDecorator(projectHandler.UpdateProject))
 	projectRoutes.DELETE("/:id", projectHandler.DeleteProject)
 }
+
+func RegisterTaskRoute(e *echo.Echo, db *gorm.DB) {
+	taskRepo := repository.NewTaskRepository(db)
+	taskUsecase := usecase.NewTaskUsecase(taskRepo)
+	taskHandler := handler.NewTaskHandler(taskUsecase)
+
+	taskRoutes := e.Group(constants.TASK_API_PREFIX)
+	taskRoutes.POST("", utils.BindAndValidateDecorator(taskHandler.CreateTask))
+	taskRoutes.GET("", taskHandler.GetTasks)
+	taskRoutes.GET("/:id", taskHandler.GetTaskByID)
+	taskRoutes.PATCH("/:id", utils.BindAndValidateDecorator(taskHandler.UpdateTask))
+	taskRoutes.DELETE("/:id", taskHandler.DeleteTask)
+}

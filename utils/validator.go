@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -26,6 +27,7 @@ func BindAndValidateDecorator[T any](fn func(echo.Context, *T) error) echo.Handl
 		}
 
 		if err := c.Validate(input); err != nil {
+			log.Println(err)
 			return err // This will be caught by our CustomHTTPErrorHandler
 		}
 

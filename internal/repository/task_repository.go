@@ -24,7 +24,33 @@ func NewTaskRepository(db *gorm.DB) TaskRepository {
 }
 
 func (r *taskRepo) CreateTask(task *entity.Task) error {
-	return r.db.Create(task).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Create or get existing labels
+		if len(task.Labels) > 0 {
+			for i := range task.Labels {
+				var existingLabel entity.Label
+				err := tx.Where("name = ? AND user_id = ?", task.Labels[i].Name, task.UserID).First(&existingLabel).Error
+				if err == gorm.ErrRecordNotFound {
+					// Create new label if it doesn't exist
+					if err := tx.Create(&task.Labels[i]).Error; err != nil {
+						return err
+					}
+				} else if err != nil {
+					return err
+				} else {
+					// Use existing label
+					task.Labels[i] = existingLabel
+				}
+			}
+		}
+
+		// Create the task
+		if err := tx.Create(task).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (r *taskRepo) IsTaskExist(name string) (bool, error) {

@@ -43,6 +43,19 @@ func (u *taskUsecase) CreateTask(input *request.CreateTaskInput) error {
 		Priority:    input.Priority,
 	}
 
+	// Create or get existing labels and associate them with the task
+	if len(input.Labels) > 0 {
+		var labels []entity.Label
+		for _, labelName := range input.Labels {
+			label := entity.Label{
+				Name:   labelName,
+				UserID: input.UserID,
+			}
+			labels = append(labels, label)
+		}
+		task.Labels = labels
+	}
+
 	return u.repo.CreateTask(task)
 }
 

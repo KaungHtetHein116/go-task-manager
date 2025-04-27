@@ -46,3 +46,16 @@ func RegisterTaskRoute(e *echo.Echo, db *gorm.DB) {
 	taskRoutes.PATCH("/:id", utils.BindAndValidateDecorator(taskHandler.UpdateTask))
 	taskRoutes.DELETE("/:id", taskHandler.DeleteTask)
 }
+
+func RegisterLabelRoute(e *echo.Echo, db *gorm.DB) {
+	labelRepo := repository.NewLabelRepository(db)
+	labelUsecase := usecase.NewLabelUsecase(labelRepo)
+	labelHandler := handler.NewLabelHandler(labelUsecase)
+
+	labelRoutes := e.Group(constants.LABEL_API_PREFIX)
+	labelRoutes.POST("", utils.BindAndValidateDecorator(labelHandler.CreateLabel))
+	labelRoutes.GET("", labelHandler.GetLabels)
+	labelRoutes.GET("/:id", labelHandler.GetLabelByID)
+	labelRoutes.PATCH("/:id", utils.BindAndValidateDecorator(labelHandler.UpdateLabel))
+	labelRoutes.DELETE("/:id", labelHandler.DeleteLabel)
+}

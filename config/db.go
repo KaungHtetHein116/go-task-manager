@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/KaungHtetHein116/personal-task-manager/internal/entity"
 	"github.com/joho/godotenv"
 	"github.com/labstack/gommon/log"
 	"gorm.io/driver/postgres"
@@ -31,10 +32,10 @@ func ConnectDB() *gorm.DB {
 		log.Fatalf("Failed to connect to database %v", err)
 	}
 
-	// err = db.AutoMigrate(&entity.User{}, &entity.Project{}, &entity.Task{})
-	// if err != nil {
-	// 	log.Fatalf("Failed to migrate database %v", err)
-	// }
+	err = db.AutoMigrate(&entity.User{}, &entity.Project{}, &entity.Task{})
+	if err != nil {
+		log.Fatalf("Failed to migrate database %v", err)
+	}
 
 	DB = db
 

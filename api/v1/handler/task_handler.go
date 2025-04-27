@@ -55,6 +55,11 @@ func (h *TaskHandler) GetTasks(c echo.Context) error {
 
 	var taskResponses []response.TaskResponse
 	for _, task := range tasks {
+		var labels []string
+		for _, label := range task.Labels {
+			labels = append(labels, label.Name)
+		}
+
 		taskResponses = append(taskResponses, response.TaskResponse{
 			ID:          task.ID,
 			Title:       task.Title,
@@ -62,6 +67,7 @@ func (h *TaskHandler) GetTasks(c echo.Context) error {
 			Status:      task.Status,
 			Priority:    task.Priority,
 			ProjectID:   task.ProjectID,
+			Labels:      labels,
 			CreatedAt:   task.CreatedAt.Format("2006-01-02 15:04:05"),
 			UpdatedAt:   task.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
@@ -85,6 +91,11 @@ func (h *TaskHandler) GetTaskByID(c echo.Context) error {
 		return transport.NewApiErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve task", nil)
 	}
 
+	var labels []string
+	for _, label := range task.Labels {
+		labels = append(labels, label.Name)
+	}
+
 	taskResponse := response.TaskResponse{
 		ID:          task.ID,
 		Title:       task.Title,
@@ -92,6 +103,7 @@ func (h *TaskHandler) GetTaskByID(c echo.Context) error {
 		Status:      task.Status,
 		Priority:    task.Priority,
 		ProjectID:   task.ProjectID,
+		Labels:      labels,
 		CreatedAt:   task.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:   task.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}

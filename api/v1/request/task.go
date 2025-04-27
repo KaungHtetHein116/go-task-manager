@@ -11,9 +11,10 @@ type CreateTaskInput struct {
 }
 
 type UpdateTaskInput struct {
-	Title       string `json:"title" validate:"required,min=1,max=255"`
-	Description string `json:"description"`
-	Status      bool   `json:"status" validate:"required"`
-	Priority    string `json:"priority" validate:"required,oneof=high medium low"`
-	UserID      uint   `json:"-"`
+	Title       string   `json:"title" validate:"required,min=1,max=255"`
+	Description string   `json:"description"`
+	Status      bool     `json:"status" validate:"required"`
+	Priority    string   `json:"priority" validate:"required,oneof=high medium low"`
+	Labels      []string `json:"labels" validate:"omitempty"`
+	UserID      uint     `json:"-"`
 }

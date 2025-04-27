@@ -99,7 +99,34 @@ func (r *taskRepo) GetTaskByID(taskID, userID uint) (*entity.Task, error) {
 }
 
 func (r *taskRepo) UpdateTask(task *entity.Task) error {
-	return r.db.Save(task).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// First, remove existing label associations
+		if err := tx.Model(task).Association("Labels").Clear(); err != nil {
+			return err
+		}
+
+		// Create or get existing labels
+		if len(task.Labels) > 0 {
+			for i := range task.Labels {
+				var existingLabel entity.Label
+				err := tx.Where("name = ? AND user_id = ?", task.Labels[i].Name, task.UserID).First(&existingLabel).Error
+				if err == gorm.ErrRecordNotFound {
+					// Create new label if it doesn't exist
+					if err := tx.Create(&task.Labels[i]).Error; err != nil {
+						return err
+					}
+				} else if err != nil {
+					return err
+				} else {
+					// Use existing label
+					task.Labels[i] = existingLabel
+				}
+			}
+		}
+
+		// Update the task
+		return tx.Save(task).Error
+	})
 }
 
 func (r *taskRepo) DeleteTask(taskID, userID uint) error {

@@ -82,6 +82,21 @@ func (u *taskUsecase) UpdateTask(taskID uint, input *request.UpdateTaskInput) er
 	task.Status = input.Status
 	task.Priority = input.Priority
 
+	// Handle label updates
+	if len(input.Labels) > 0 {
+		var labels []entity.Label
+		for _, labelName := range input.Labels {
+			label := entity.Label{
+				Name:   labelName,
+				UserID: input.UserID,
+			}
+			labels = append(labels, label)
+		}
+		task.Labels = labels
+	} else {
+		task.Labels = []entity.Label{} // Clear labels if empty array is provided
+	}
+
 	return u.repo.UpdateTask(task)
 }
 

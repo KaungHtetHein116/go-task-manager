@@ -85,13 +85,13 @@ func (r *taskRepo) IsProjectExist(projectID, userID uint) (bool, error) {
 
 func (r *taskRepo) GetTasks(userID uint) ([]entity.Task, error) {
 	var tasks []entity.Task
-	err := r.db.Where("user_id = ?", userID).Find(&tasks).Error
+	err := r.db.Preload("Labels").Where("user_id = ?", userID).Find(&tasks).Error
 	return tasks, err
 }
 
 func (r *taskRepo) GetTaskByID(taskID, userID uint) (*entity.Task, error) {
 	var task entity.Task
-	err := r.db.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error
+	err := r.db.Preload("Labels").Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error
 	if err != nil {
 		return nil, err
 	}
